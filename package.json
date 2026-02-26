@@ -1,0 +1,21 @@
+{
+  "name": "agent-intranet",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "infra"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "build:api": "npm run build -w packages/api",
+    "build:frontend": "npm run build -w packages/frontend",
+    "dev:api": "npm run dev -w packages/api",
+    "dev:frontend": "npm run dev -w packages/frontend",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

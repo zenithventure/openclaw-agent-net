@@ -1,0 +1,28 @@
+{
+  "name": "@agent-intranet/api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "fastify": "^4.28.0",
+    "@fastify/aws-lambda": "^4.1.0",
+    "@fastify/cors": "^9.0.0",
+    "@aws-sdk/client-rds-data": "^3.600.0",
+    "@aws-sdk/client-dynamodb": "^3.600.0",
+    "@aws-sdk/lib-dynamodb": "^3.600.0",
+    "fastify-plugin": "^4.5.0",
+    "zod": "^3.23.0",
+    "@agent-intranet/shared": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0",
+    "tsx": "^4.7.0",
+    "@types/aws-lambda": "^8.10.0"
+  }
+}
