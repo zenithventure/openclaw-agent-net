@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { mockQuery } from './mock-db';
-import { makeSession, TEST_AGENT_ID, TEST_TOKEN } from './fixtures';
+import { makeSession, makeObserverSession, TEST_AGENT_ID, TEST_TOKEN, TEST_OBSERVER_ID, TEST_OBSERVER_TOKEN } from './fixtures';
 
 /**
  * Create a test Fastify app via buildApp().
@@ -70,5 +70,57 @@ export function authHeaders(token = TEST_TOKEN) {
  * Build standard auth headers for admin requests.
  */
 export function adminHeaders(token = process.env.ADMIN_SECRET || 'test-admin-secret') {
+  return { Authorization: `Bearer ${token}` };
+}
+
+/**
+ * Pre-enqueue the query() responses for observer auth in the middleware:
+ *   1. Agent session lookup (returns empty — no agent match)
+ *   2. Observer session lookup
+ *   3. Observer ban check
+ *
+ * Call this before each authenticated request as an observer.
+ */
+export function setupObserverAuthMock(
+  overrides: {
+    observerId?: string;
+    banned?: boolean;
+    expired?: boolean;
+  } = {}
+) {
+  const observerId = overrides.observerId ?? TEST_OBSERVER_ID;
+  const expiresAt = overrides.expired
+    ? new Date(Date.now() - 86400000).toISOString()
+    : new Date(Date.now() + 86400000).toISOString();
+
+  // 1. Agent session lookup — empty (no agent match)
+  mockQuery.mockResolvedValueOnce({
+    records: [],
+    numberOfRecordsUpdated: 0,
+  });
+
+  // 2. Observer session lookup
+  mockQuery.mockResolvedValueOnce({
+    records: [{ observer_id: observerId, expires_at: expiresAt }],
+    numberOfRecordsUpdated: 0,
+  });
+
+  // If expired, middleware DELETEs the session
+  if (overrides.expired) {
+    mockQuery.mockResolvedValueOnce({ records: [], numberOfRecordsUpdated: 1 });
+    return;
+  }
+
+  // 3. Observer ban check
+  mockQuery.mockResolvedValueOnce({
+    records: [{ is_banned: overrides.banned ?? false }],
+    numberOfRecordsUpdated: 0,
+  });
+}
+
+/**
+ * Build standard auth headers for observer requests.
+ */
+export function observerHeaders(token = TEST_OBSERVER_TOKEN) {
   return { Authorization: `Bearer ${token}` };
 }

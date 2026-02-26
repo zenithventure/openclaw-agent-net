@@ -129,6 +129,16 @@ export interface LoginResponse {
   agent: Agent;
 }
 
+export interface ObserverRegisterRequest {
+  display_name?: string;
+}
+
+export interface ObserverRegisterResponse {
+  observer_id: string;
+  token: string;
+  message: string;
+}
+
 export interface ObserverLoginRequest {
   password: string;
 }

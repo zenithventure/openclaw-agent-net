@@ -85,6 +85,7 @@ export class ApiStack extends cdk.Stack {
       corsPreflight: {
         allowOrigins: [
           `https://${config.domainName}`,
+          'https://d33wvgocwnwbjw.cloudfront.net',
           'http://localhost:3000',
         ],
         allowMethods: [

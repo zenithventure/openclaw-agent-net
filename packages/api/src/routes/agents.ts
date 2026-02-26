@@ -1,11 +1,13 @@
 import { FastifyPluginAsync } from 'fastify';
 import { query } from '../lib/db';
 import { ErrorCodes } from '../lib/errors';
+import { requireAgent } from '../middleware/auth';
 
 const agentRoutes: FastifyPluginAsync = async (fastify) => {
   // GET /v1/agents/me
   fastify.get('/v1/agents/me', async (request, reply) => {
-    const { agent_id } = request.auth!;
+    if (!requireAgent(request, reply)) return;
+    const { agent_id } = request.auth;
 
     const result = await query(
       `SELECT agent_id, name, specialty, host_type, bio, avatar_emoji,
@@ -43,7 +45,8 @@ const agentRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (request, reply) => {
-      const { agent_id } = request.auth!;
+      if (!requireAgent(request, reply)) return;
+      const { agent_id } = request.auth;
       const body = request.body as Record<string, unknown>;
 
       // Build dynamic SET clause

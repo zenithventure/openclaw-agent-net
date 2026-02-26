@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
 import { mockQuery, resetDbMocks } from '../../helpers/mock-db';
-import { createTestApp, authHeaders } from '../../helpers/app-factory';
-import { makeSession, TEST_AGENT_ID } from '../../helpers/fixtures';
+import { createTestApp, authHeaders, setupObserverAuthMock, observerHeaders } from '../../helpers/app-factory';
+import { makeSession, makeObserverSession, TEST_AGENT_ID, TEST_OBSERVER_ID } from '../../helpers/fixtures';
 import type { FastifyInstance } from 'fastify';
 
 let app: FastifyInstance;
@@ -30,6 +30,18 @@ describe('Auth middleware', () => {
       // Will fail validation, but auth middleware was skipped
       expect(res.statusCode).toBe(400);
     });
+
+    it('should skip auth for /v1/auth/observer-register', async () => {
+      const res = await app.inject({ method: 'POST', url: '/v1/auth/observer-register' });
+      // Auth skipped — will hit rate limit mock or route handler
+      expect(res.statusCode).not.toBe(401);
+    });
+
+    it('should skip auth for /v1/auth/observer-login', async () => {
+      const res = await app.inject({ method: 'POST', url: '/v1/auth/observer-login' });
+      // Auth skipped — will fail validation (missing password), not 401
+      expect(res.statusCode).toBe(400);
+    });
   });
 
   describe('agent auth', () => {
@@ -49,7 +61,10 @@ describe('Auth middleware', () => {
       expect(res.json().code).toBe('UNAUTHORIZED');
     });
 
-    it('should return 401 for session not found', async () => {
+    it('should return 401 for session not found (agent + observer)', async () => {
+      // Agent session lookup — empty
+      mockQuery.mockResolvedValueOnce({ records: [], numberOfRecordsUpdated: 0 });
+      // Observer session lookup — also empty
       mockQuery.mockResolvedValueOnce({ records: [], numberOfRecordsUpdated: 0 });
 
       const res = await app.inject({
@@ -175,6 +190,77 @@ describe('Auth middleware', () => {
         headers: { Authorization: `Bearer ${process.env.ADMIN_SECRET}` },
       });
       expect(res.statusCode).toBe(200);
+    });
+  });
+
+  describe('observer auth', () => {
+    it('should fall back to observer session when agent session not found', async () => {
+      setupObserverAuthMock();
+      // GET /v1/channels doesn't need further query mocks (just one query for channels)
+      mockQuery.mockResolvedValueOnce({
+        records: [{ slug: 'general', name: 'General', description: 'test', emoji: '💬' }],
+        numberOfRecordsUpdated: 0,
+      });
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/channels',
+        headers: observerHeaders(),
+      });
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('should return 401 for expired observer session', async () => {
+      setupObserverAuthMock({ expired: true });
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/channels',
+        headers: observerHeaders(),
+      });
+      expect(res.statusCode).toBe(401);
+      expect(res.json().code).toBe('TOKEN_EXPIRED');
+    });
+
+    it('should return 403 for banned observer', async () => {
+      setupObserverAuthMock({ banned: true });
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/channels',
+        headers: observerHeaders(),
+      });
+      expect(res.statusCode).toBe(403);
+      expect(res.json().code).toBe('AGENT_SUSPENDED');
+    });
+
+    it('should set request.auth.role to observer', async () => {
+      setupObserverAuthMock();
+      // GET /v1/channels query
+      mockQuery.mockResolvedValueOnce({
+        records: [{ slug: 'general', name: 'General', description: 'test', emoji: '💬' }],
+        numberOfRecordsUpdated: 0,
+      });
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/channels',
+        headers: observerHeaders(),
+      });
+      // Observers can access read-only routes
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('should return 403 for observer on agent-only endpoints', async () => {
+      setupObserverAuthMock();
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/agents/me',
+        headers: observerHeaders(),
+      });
+      expect(res.statusCode).toBe(403);
+      expect(res.json().code).toBe('FORBIDDEN');
     });
   });
 });

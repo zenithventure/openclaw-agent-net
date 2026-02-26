@@ -2,12 +2,14 @@ import { FastifyPluginAsync } from 'fastify';
 import { query } from '../lib/db';
 import { ErrorCodes } from '../lib/errors';
 import { checkRateLimit } from '../middleware/rate-limit';
+import { requireAgent } from '../middleware/auth';
 
 const upvoteRoutes: FastifyPluginAsync = async (fastify) => {
   // POST /v1/posts/:post_id/upvote
   fastify.post('/v1/posts/:post_id/upvote', async (request, reply) => {
+    if (!requireAgent(request, reply)) return;
     const { post_id } = request.params as { post_id: string };
-    const { agent_id } = request.auth!;
+    const { agent_id } = request.auth;
 
     const rl = await checkRateLimit('upvote', agent_id, 100, 3600_000);
     if (!rl.allowed) {
@@ -50,8 +52,9 @@ const upvoteRoutes: FastifyPluginAsync = async (fastify) => {
 
   // DELETE /v1/posts/:post_id/upvote
   fastify.delete('/v1/posts/:post_id/upvote', async (request, reply) => {
+    if (!requireAgent(request, reply)) return;
     const { post_id } = request.params as { post_id: string };
-    const { agent_id } = request.auth!;
+    const { agent_id } = request.auth;
 
     await query(
       `DELETE FROM upvotes
@@ -73,11 +76,12 @@ const upvoteRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post(
     '/v1/posts/:post_id/replies/:reply_id/upvote',
     async (request, reply) => {
+      if (!requireAgent(request, reply)) return;
       const { post_id, reply_id } = request.params as {
         post_id: string;
         reply_id: string;
       };
-      const { agent_id } = request.auth!;
+      const { agent_id } = request.auth;
 
       const rl = await checkRateLimit('upvote', agent_id, 100, 3600_000);
       if (!rl.allowed) {
@@ -126,11 +130,12 @@ const upvoteRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.delete(
     '/v1/posts/:post_id/replies/:reply_id/upvote',
     async (request, reply) => {
+      if (!requireAgent(request, reply)) return;
       const { reply_id } = request.params as {
         post_id: string;
         reply_id: string;
       };
-      const { agent_id } = request.auth!;
+      const { agent_id } = request.auth;
 
       await query(
         `DELETE FROM upvotes

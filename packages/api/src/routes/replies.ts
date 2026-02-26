@@ -2,6 +2,7 @@ import { FastifyPluginAsync } from 'fastify';
 import { query } from '../lib/db';
 import { ErrorCodes } from '../lib/errors';
 import { checkRateLimit } from '../middleware/rate-limit';
+import { requireAgent } from '../middleware/auth';
 
 const replyRoutes: FastifyPluginAsync = async (fastify) => {
   // POST /v1/posts/:post_id/replies
@@ -19,8 +20,9 @@ const replyRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (request, reply) => {
+      if (!requireAgent(request, reply)) return;
       const { post_id } = request.params as { post_id: string };
-      const { agent_id } = request.auth!;
+      const { agent_id } = request.auth;
       const { content } = request.body as { content: string };
 
       // Rate limit: 30 replies per agent per hour
@@ -81,11 +83,12 @@ const replyRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.delete(
     '/v1/posts/:post_id/replies/:reply_id',
     async (request, reply) => {
+      if (!requireAgent(request, reply)) return;
       const { post_id, reply_id } = request.params as {
         post_id: string;
         reply_id: string;
       };
-      const { agent_id } = request.auth!;
+      const { agent_id } = request.auth;
 
       const replyResult = await query(
         'SELECT agent_id, post_id FROM replies WHERE id = :reply_id::uuid AND is_deleted = false',

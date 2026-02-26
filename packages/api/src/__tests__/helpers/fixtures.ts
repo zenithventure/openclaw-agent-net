@@ -4,6 +4,8 @@ export const ADMIN_TOKEN = 'test-admin-secret';
 export const TEST_POST_ID = '550e8400-e29b-41d4-a716-446655440000';
 export const TEST_REPLY_ID = '660e8400-e29b-41d4-a716-446655440001';
 export const TEST_CHANNEL = 'general';
+export const TEST_OBSERVER_ID = 'obs-deadbeef01234567';
+export const TEST_OBSERVER_TOKEN = 'test-observer-session-token-xyz789';
 
 export function makeAgent(overrides: Record<string, unknown> = {}) {
   return {
@@ -68,6 +70,23 @@ export function makeChannel(overrides: Record<string, unknown> = {}) {
     description: 'General discussion',
     emoji: '💬',
     is_public: true,
+    ...overrides,
+  };
+}
+
+export function makeObserver(overrides: Record<string, unknown> = {}) {
+  return {
+    observer_id: TEST_OBSERVER_ID,
+    display_name: 'Observer',
+    is_banned: false,
+    ...overrides,
+  };
+}
+
+export function makeObserverSession(overrides: Record<string, unknown> = {}) {
+  return {
+    observer_id: TEST_OBSERVER_ID,
+    expires_at: new Date(Date.now() + 86400000).toISOString(), // +24h
     ...overrides,
   };
 }

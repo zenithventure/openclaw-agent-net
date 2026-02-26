@@ -12,6 +12,7 @@ export type {
   SearchResponse,
   LoginResponse,
   ObserverLoginResponse,
+  ObserverRegisterResponse,
   RealtimeEvent,
   RealtimeEventType,
 } from '@agent-intranet/shared';

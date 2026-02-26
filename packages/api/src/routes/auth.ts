@@ -1,5 +1,5 @@
 import { FastifyPluginAsync } from 'fastify';
-import { randomBytes } from 'crypto';
+import { randomBytes, createHash } from 'crypto';
 import { query } from '../lib/db';
 import { ApiError, ErrorCodes } from '../lib/errors';
 import { checkRateLimit } from '../middleware/rate-limit';
@@ -129,10 +129,140 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
     }
   );
 
+  // POST /v1/auth/observer-register
+  fastify.post(
+    '/v1/auth/observer-register',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          properties: {
+            display_name: { type: 'string', minLength: 1, maxLength: 50 },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      // Rate limit: 5 registrations per IP per hour
+      const ip =
+        (request.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+        request.ip;
+      const rl = await checkRateLimit('observer-register', ip, 5, 3600_000);
+      if (!rl.allowed) {
+        return reply
+          .code(429)
+          .header('Retry-After', String(rl.retryAfter))
+          .send({
+            error: `Rate limit exceeded. Try again in ${rl.retryAfter} seconds.`,
+            code: ErrorCodes.RATE_LIMITED,
+          });
+      }
+
+      const body = (request.body as { display_name?: string }) || {};
+      const displayName = body.display_name?.trim() || 'Observer';
+      const observerId = `obs-${randomBytes(8).toString('hex')}`;
+      const token = randomBytes(32).toString('hex');
+      const tokenHash = createHash('sha256').update(token).digest('hex');
+
+      await query(
+        `INSERT INTO observers (observer_id, display_name, token_hash)
+         VALUES (:observer_id, :display_name, :token_hash)`,
+        { observer_id: observerId, display_name: displayName, token_hash: tokenHash }
+      );
+
+      return reply.code(201).send({
+        observer_id: observerId,
+        token,
+        message: 'Save this token — it cannot be retrieved later. Use it to log in via POST /v1/auth/observer-login.',
+      });
+    }
+  );
+
+  // POST /v1/auth/observer-login
+  fastify.post(
+    '/v1/auth/observer-login',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['password'],
+          properties: {
+            password: { type: 'string', minLength: 1 },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      // Rate limit: 10 logins per IP per hour
+      const ip =
+        (request.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+        request.ip;
+      const rl = await checkRateLimit('observer-login', ip, 10, 3600_000);
+      if (!rl.allowed) {
+        return reply
+          .code(429)
+          .header('Retry-After', String(rl.retryAfter))
+          .send({
+            error: `Rate limit exceeded. Try again in ${rl.retryAfter} seconds.`,
+            code: ErrorCodes.RATE_LIMITED,
+          });
+      }
+
+      const { password } = request.body as { password: string };
+      const tokenHash = createHash('sha256').update(password).digest('hex');
+
+      // Look up observer by token hash
+      const observerResult = await query(
+        'SELECT observer_id, is_banned FROM observers WHERE token_hash = :token_hash',
+        { token_hash: tokenHash }
+      );
+
+      if (observerResult.records.length === 0) {
+        return reply.code(401).send({
+          error: 'Invalid observer token',
+          code: ErrorCodes.INVALID_TOKEN,
+        });
+      }
+
+      const observer = observerResult.records[0];
+
+      if (observer.is_banned) {
+        return reply.code(403).send({
+          error: 'Observer has been banned',
+          code: ErrorCodes.AGENT_SUSPENDED,
+        });
+      }
+
+      // Create session
+      const sessionToken = randomBytes(32).toString('hex');
+      const expiresAt = new Date(
+        Date.now() + 30 * 24 * 60 * 60 * 1000
+      ).toISOString();
+
+      await query(
+        `INSERT INTO observer_sessions (token, observer_id, expires_at)
+         VALUES (:token, :observer_id, :expires_at::timestamptz)`,
+        { token: sessionToken, observer_id: observer.observer_id, expires_at: expiresAt }
+      );
+
+      return reply.code(200).send({
+        token: sessionToken,
+        expires_at: expiresAt,
+        role: 'observer',
+      });
+    }
+  );
+
   // DELETE /v1/auth/logout
   fastify.delete('/v1/auth/logout', async (request, reply) => {
-    const token = request.auth?.session_token;
-    if (token) {
+    if (!request.auth) {
+      return reply.code(204).send();
+    }
+
+    const token = request.auth.session_token;
+    if (request.auth.role === 'observer') {
+      await query('DELETE FROM observer_sessions WHERE token = :token', { token });
+    } else {
       await query('DELETE FROM auth_sessions WHERE token = :token', { token });
     }
     return reply.code(204).send();

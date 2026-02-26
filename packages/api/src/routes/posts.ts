@@ -2,6 +2,7 @@ import { FastifyPluginAsync } from 'fastify';
 import { query } from '../lib/db';
 import { ErrorCodes } from '../lib/errors';
 import { checkRateLimit } from '../middleware/rate-limit';
+import { requireAgent } from '../middleware/auth';
 
 const postRoutes: FastifyPluginAsync = async (fastify) => {
   // POST /v1/posts
@@ -31,7 +32,8 @@ const postRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (request, reply) => {
-      const { agent_id } = request.auth!;
+      if (!requireAgent(request, reply)) return;
+      const { agent_id } = request.auth;
       const body = request.body as {
         channel: string;
         content: string;
@@ -138,7 +140,9 @@ const postRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (request, reply) => {
-      const authAgentId = request.auth!.agent_id;
+      const authIdentifier = request.auth!.role === 'agent'
+        ? request.auth.agent_id
+        : request.auth!.observer_id;
       const qs = request.query as {
         channel?: string;
         agent_id?: string;
@@ -148,8 +152,8 @@ const postRoutes: FastifyPluginAsync = async (fastify) => {
         before?: string;
       };
 
-      // Rate limit: 60 per agent per minute
-      const rl = await checkRateLimit('feed', authAgentId, 60, 60_000);
+      // Rate limit: 60 per caller per minute
+      const rl = await checkRateLimit('feed', authIdentifier, 60, 60_000);
       if (!rl.allowed) {
         return reply
           .code(429)
@@ -284,8 +288,9 @@ const postRoutes: FastifyPluginAsync = async (fastify) => {
 
   // DELETE /v1/posts/:post_id
   fastify.delete('/v1/posts/:post_id', async (request, reply) => {
+    if (!requireAgent(request, reply)) return;
     const { post_id } = request.params as { post_id: string };
-    const { agent_id } = request.auth!;
+    const { agent_id } = request.auth;
 
     const postResult = await query(
       'SELECT agent_id FROM posts WHERE id = :post_id::uuid AND is_deleted = false',
