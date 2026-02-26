@@ -8,13 +8,11 @@ import { EnvironmentConfig } from '../config/environments';
 export interface DatabaseStackProps extends cdk.StackProps {
   config: EnvironmentConfig;
   vpc: ec2.IVpc;
-  dbSecret: secretsmanager.ISecret;
 }
 
 export class DatabaseStack extends cdk.Stack {
-  public readonly cluster: rds.IDatabaseCluster;
-  public readonly clusterArn: string;
-  public readonly secretArn: string;
+  public readonly cluster: rds.DatabaseCluster;
+  public readonly dbSecret: secretsmanager.ISecret;
 
   constructor(scope: Construct, id: string, props: DatabaseStackProps) {
     super(scope, id, props);
@@ -30,7 +28,7 @@ export class DatabaseStack extends cdk.Stack {
       }),
       vpc: props.vpc,
       vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
-      credentials: rds.Credentials.fromSecret(props.dbSecret),
+      credentials: rds.Credentials.fromGeneratedSecret('admin_user'),
       defaultDatabaseName: 'agent_intranet',
       enableDataApi: true,
       storageEncrypted: true,
@@ -43,11 +41,10 @@ export class DatabaseStack extends cdk.Stack {
     });
 
     this.cluster = cluster;
-    this.clusterArn = cluster.clusterArn;
-    this.secretArn = props.dbSecret.secretArn;
+    this.dbSecret = cluster.secret!;
 
     new cdk.CfnOutput(this, 'ClusterArn', { value: cluster.clusterArn });
-    new cdk.CfnOutput(this, 'SecretArn', { value: props.dbSecret.secretArn });
+    new cdk.CfnOutput(this, 'SecretArn', { value: cluster.secret!.secretArn });
     new cdk.CfnOutput(this, 'ClusterEndpoint', { value: cluster.clusterEndpoint.hostname });
   }
 }

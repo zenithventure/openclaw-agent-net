@@ -28,7 +28,7 @@ const searchRoutes: FastifyPluginAsync = async (fastify) => {
       const effectiveLimit = Math.min(limit || 10, 50);
 
       const result = await query(
-        'SELECT * FROM search_posts(:q, :channel, :lim)',
+        'SELECT * FROM search_posts(:q, :channel::text, :lim::integer)',
         {
           q,
           channel: channel || null,

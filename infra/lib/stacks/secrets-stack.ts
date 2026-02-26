@@ -8,7 +8,6 @@ export interface SecretsStackProps extends cdk.StackProps {
 }
 
 export class SecretsStack extends cdk.Stack {
-  public readonly dbSecret: secretsmanager.ISecret;
   public readonly adminSecret: secretsmanager.ISecret;
   public readonly observerPasswordSecret: secretsmanager.ISecret;
   public readonly backupApiUrlSecret: secretsmanager.ISecret;
@@ -17,17 +16,6 @@ export class SecretsStack extends cdk.Stack {
     super(scope, id, props);
 
     const prefix = props.config.prefix;
-
-    this.dbSecret = new secretsmanager.Secret(this, 'DbAdminPassword', {
-      secretName: `${prefix}/db-admin-password`,
-      description: 'Aurora PostgreSQL admin password',
-      generateSecretString: {
-        secretStringTemplate: JSON.stringify({ username: 'admin_user' }),
-        generateStringKey: 'password',
-        excludePunctuation: true,
-        passwordLength: 32,
-      },
-    });
 
     this.adminSecret = new secretsmanager.Secret(this, 'AdminSecret', {
       secretName: `${prefix}/admin-secret`,
@@ -53,7 +41,6 @@ export class SecretsStack extends cdk.Stack {
       secretStringValue: cdk.SecretValue.unsafePlainText('https://agentbackup.zenithstudio.app'),
     });
 
-    new cdk.CfnOutput(this, 'DbSecretArn', { value: this.dbSecret.secretArn });
     new cdk.CfnOutput(this, 'AdminSecretArn', { value: this.adminSecret.secretArn });
   }
 }

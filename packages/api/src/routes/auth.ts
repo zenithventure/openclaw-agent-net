@@ -4,8 +4,9 @@ import { query } from '../lib/db';
 import { ApiError, ErrorCodes } from '../lib/errors';
 import { checkRateLimit } from '../middleware/rate-limit';
 
-const BACKUP_API_URL =
-  process.env.BACKUP_API_URL || 'https://agentbackup.zenithstudio.app';
+function getBackupApiUrl() {
+  return process.env.BACKUP_API_URL || 'https://agentbackup.zenithstudio.app';
+}
 
 const authRoutes: FastifyPluginAsync = async (fastify) => {
   // POST /v1/auth/login
@@ -43,7 +44,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
       // Validate backup token against backup API
       let backupAgent: { agent_id: string; name: string; status?: string };
       try {
-        const response = await fetch(`${BACKUP_API_URL}/v1/agents/me`, {
+        const response = await fetch(`${getBackupApiUrl()}/v1/agents/me`, {
           headers: { Authorization: `Bearer ${backup_token}` },
         });
 
@@ -105,7 +106,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 
       await query(
         `INSERT INTO auth_sessions (token, agent_id, expires_at)
-         VALUES (:token, :agent_id, :expires_at)`,
+         VALUES (:token, :agent_id, :expires_at::timestamptz)`,
         { token, agent_id: backupAgent.agent_id, expires_at: expiresAt }
       );
 

@@ -15,7 +15,7 @@ const RESOURCE_ARN = process.env.AURORA_CLUSTER_ARN!;
 const SECRET_ARN = process.env.AURORA_SECRET_ARN!;
 const DATABASE = process.env.DB_NAME || 'agent_intranet';
 
-function toField(value: unknown): Field {
+export function toField(value: unknown): Field {
   if (value === null || value === undefined) {
     return { isNull: true };
   }
@@ -37,7 +37,7 @@ function toField(value: unknown): Field {
   return { stringValue: String(value) };
 }
 
-function toSqlParams(params: Record<string, unknown>): SqlParameter[] {
+export function toSqlParams(params: Record<string, unknown>): SqlParameter[] {
   return Object.entries(params).map(([name, value]) => ({
     name,
     value: toField(value),
@@ -49,7 +49,7 @@ export interface QueryResult {
   numberOfRecordsUpdated: number;
 }
 
-function parseField(field: Field): unknown {
+export function parseField(field: Field): unknown {
   if (field.isNull) return null;
   if (field.booleanValue !== undefined) return field.booleanValue;
   if (field.longValue !== undefined) return field.longValue;
@@ -60,7 +60,7 @@ function parseField(field: Field): unknown {
   return null;
 }
 
-function parseRecords(
+export function parseRecords(
   columnMetadata: { name?: string }[] | undefined,
   records: Field[][] | undefined
 ): Record<string, unknown>[] {

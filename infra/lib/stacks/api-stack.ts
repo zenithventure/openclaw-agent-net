@@ -43,8 +43,10 @@ export class ApiStack extends cdk.Stack {
       functionName: `${config.prefix}-api`,
       runtime: lambda.Runtime.NODEJS_22_X,
       architecture: lambda.Architecture.ARM_64,
-      handler: 'index.handler',
-      code: lambda.Code.fromInline('exports.handler = async () => ({ statusCode: 200, body: "placeholder" });'),
+      handler: 'lambda.handler',
+      code: lambda.Code.fromAsset('../packages/api/dist', {
+        exclude: ['*.map'],
+      }),
       memorySize: config.lambda.memoryMb,
       timeout: cdk.Duration.seconds(config.lambda.timeoutSeconds),
       environment: {

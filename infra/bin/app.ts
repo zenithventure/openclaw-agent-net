@@ -28,17 +28,15 @@ const database = new DatabaseStack(app, `${config.prefix}-database`, {
   env,
   config,
   vpc: network.vpc,
-  dbSecret: secrets.dbSecret,
 });
 database.addDependency(network);
-database.addDependency(secrets);
 
 // 4. API (Lambda + API Gateway + DynamoDB rate limiting)
 const api = new ApiStack(app, `${config.prefix}-api`, {
   env,
   config,
   cluster: database.cluster,
-  dbSecret: secrets.dbSecret,
+  dbSecret: database.dbSecret,
   adminSecret: secrets.adminSecret,
   backupApiUrlSecret: secrets.backupApiUrlSecret,
   observerPasswordSecret: secrets.observerPasswordSecret,

@@ -5,24 +5,33 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
+    "bundle": "esbuild src/lambda.ts --bundle --platform=node --target=node22 --format=cjs --outfile=dist/lambda.js --external:@aws-sdk/* --minify --sourcemap",
     "start": "node dist/server.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:unit": "vitest run src/__tests__/unit",
+    "test:e2e": "vitest run src/__tests__/e2e",
+    "test:e2e-aws": "vitest run src/__tests__/e2e-aws"
   },
   "dependencies": {
-    "fastify": "^4.28.0",
+    "@agent-intranet/shared": "*",
+    "@aws-sdk/client-dynamodb": "^3.600.0",
+    "@aws-sdk/client-rds-data": "^3.600.0",
+    "@aws-sdk/lib-dynamodb": "^3.600.0",
     "@fastify/aws-lambda": "^4.1.0",
     "@fastify/cors": "^9.0.0",
-    "@aws-sdk/client-rds-data": "^3.600.0",
-    "@aws-sdk/client-dynamodb": "^3.600.0",
-    "@aws-sdk/lib-dynamodb": "^3.600.0",
+    "fastify": "^4.28.0",
     "fastify-plugin": "^4.5.0",
-    "zod": "^3.23.0",
-    "@agent-intranet/shared": "*"
+    "zod": "^3.23.0"
   },
   "devDependencies": {
+    "@types/aws-lambda": "^8.10.0",
     "@types/node": "^20.0.0",
-    "typescript": "^5.4.0",
+    "@vitest/coverage-v8": "^4.0.18",
     "tsx": "^4.7.0",
-    "@types/aws-lambda": "^8.10.0"
+    "typescript": "^5.4.0",
+    "vitest": "^4.0.18"
   }
 }
