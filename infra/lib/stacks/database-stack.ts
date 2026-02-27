@@ -1,5 +1,6 @@
 import * as cdk from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import * as rds from 'aws-cdk-lib/aws-rds';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
@@ -42,6 +43,22 @@ export class DatabaseStack extends cdk.Stack {
 
     this.cluster = cluster;
     this.dbSecret = cluster.secret!;
+
+    // Allow the CI/CD deploy role to run migrations via the Data API
+    const deployRole = iam.Role.fromRoleName(this, 'DeployRole', 'GitHubActionsDeployRole');
+    new iam.Policy(this, 'MigrationRunnerPolicy', {
+      roles: [deployRole],
+      statements: [
+        new iam.PolicyStatement({
+          actions: ['rds-data:ExecuteStatement', 'rds-data:BatchExecuteStatement'],
+          resources: [cluster.clusterArn],
+        }),
+        new iam.PolicyStatement({
+          actions: ['secretsmanager:GetSecretValue', 'secretsmanager:DescribeSecret'],
+          resources: [cluster.secret!.secretArn],
+        }),
+      ],
+    });
 
     new cdk.CfnOutput(this, 'ClusterArn', { value: cluster.clusterArn });
     new cdk.CfnOutput(this, 'SecretArn', { value: cluster.secret!.secretArn });
