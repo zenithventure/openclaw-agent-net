@@ -109,9 +109,26 @@ jobs:
             --stack-name agent-net-dev-frontend \
             --query 'Stacks[0].Outputs[?OutputKey==`DistributionId`].OutputValue' \
             --output text)
+          CLUSTER_ARN=$(aws cloudformation describe-stacks \
+            --stack-name agent-net-dev-database \
+            --query 'Stacks[0].Outputs[?OutputKey==`ClusterArn`].OutputValue' \
+            --output text)
+          SECRET_ARN=$(aws cloudformation describe-stacks \
+            --stack-name agent-net-dev-database \
+            --query 'Stacks[0].Outputs[?OutputKey==`SecretArn`].OutputValue' \
+            --output text)
           echo "api_url=$API_URL" >> $GITHUB_OUTPUT
           echo "bucket=$BUCKET" >> $GITHUB_OUTPUT
           echo "distribution_id=$DIST_ID" >> $GITHUB_OUTPUT
+          echo "cluster_arn=$CLUSTER_ARN" >> $GITHUB_OUTPUT
+          echo "secret_arn=$SECRET_ARN" >> $GITHUB_OUTPUT
+
+      - name: Run database migrations
+        run: bash scripts/migrate.sh
+        env:
+          CLUSTER_ARN: ${{ steps.cfn.outputs.cluster_arn }}
+          SECRET_ARN: ${{ steps.cfn.outputs.secret_arn }}
+          DB_NAME: agent_intranet
 
       - name: Build frontend
         run: npm run build -w packages/frontend
@@ -194,9 +211,26 @@ jobs:
             --stack-name agent-net-qa-frontend \
             --query 'Stacks[0].Outputs[?OutputKey==`DistributionId`].OutputValue' \
             --output text)
+          CLUSTER_ARN=$(aws cloudformation describe-stacks \
+            --stack-name agent-net-qa-database \
+            --query 'Stacks[0].Outputs[?OutputKey==`ClusterArn`].OutputValue' \
+            --output text)
+          SECRET_ARN=$(aws cloudformation describe-stacks \
+            --stack-name agent-net-qa-database \
+            --query 'Stacks[0].Outputs[?OutputKey==`SecretArn`].OutputValue' \
+            --output text)
           echo "api_url=$API_URL" >> $GITHUB_OUTPUT
           echo "bucket=$BUCKET" >> $GITHUB_OUTPUT
           echo "distribution_id=$DIST_ID" >> $GITHUB_OUTPUT
+          echo "cluster_arn=$CLUSTER_ARN" >> $GITHUB_OUTPUT
+          echo "secret_arn=$SECRET_ARN" >> $GITHUB_OUTPUT
+
+      - name: Run database migrations
+        run: bash scripts/migrate.sh
+        env:
+          CLUSTER_ARN: ${{ steps.cfn.outputs.cluster_arn }}
+          SECRET_ARN: ${{ steps.cfn.outputs.secret_arn }}
+          DB_NAME: agent_intranet
 
       - name: Build frontend
         run: npm run build -w packages/frontend
@@ -279,9 +313,26 @@ jobs:
             --stack-name agent-net-prod-frontend \
             --query 'Stacks[0].Outputs[?OutputKey==`DistributionId`].OutputValue' \
             --output text)
+          CLUSTER_ARN=$(aws cloudformation describe-stacks \
+            --stack-name agent-net-prod-database \
+            --query 'Stacks[0].Outputs[?OutputKey==`ClusterArn`].OutputValue' \
+            --output text)
+          SECRET_ARN=$(aws cloudformation describe-stacks \
+            --stack-name agent-net-prod-database \
+            --query 'Stacks[0].Outputs[?OutputKey==`SecretArn`].OutputValue' \
+            --output text)
           echo "api_url=$API_URL" >> $GITHUB_OUTPUT
           echo "bucket=$BUCKET" >> $GITHUB_OUTPUT
           echo "distribution_id=$DIST_ID" >> $GITHUB_OUTPUT
+          echo "cluster_arn=$CLUSTER_ARN" >> $GITHUB_OUTPUT
+          echo "secret_arn=$SECRET_ARN" >> $GITHUB_OUTPUT
+
+      - name: Run database migrations
+        run: bash scripts/migrate.sh
+        env:
+          CLUSTER_ARN: ${{ steps.cfn.outputs.cluster_arn }}
+          SECRET_ARN: ${{ steps.cfn.outputs.secret_arn }}
+          DB_NAME: agent_intranet
 
       - name: Build frontend
         run: npm run build -w packages/frontend

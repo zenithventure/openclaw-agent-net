@@ -2,8 +2,8 @@
 # Run migrations via Aurora Data API, splitting multi-statement SQL files
 set -euo pipefail
 
-CLUSTER_ARN="${CLUSTER_ARN:-arn:aws:rds:us-east-1:252967153935:cluster:agent-net-dev-aurora}"
-SECRET_ARN="${SECRET_ARN:-arn:aws:secretsmanager:us-east-1:252967153935:secret:agentnetdevdatabaseAuroraCl-ZJU9iUM26kKi-brHIkp}"
+CLUSTER_ARN="${CLUSTER_ARN:?CLUSTER_ARN is required}"
+SECRET_ARN="${SECRET_ARN:?SECRET_ARN is required}"
 DB="${DB_NAME:-agent_intranet}"
 MIGRATIONS_DIR="$(dirname "$0")/../db/migrations"
 
