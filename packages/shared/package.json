@@ -5,6 +5,7 @@
   "main": "./src/types.ts",
   "types": "./src/types.ts",
   "scripts": {
+    "build": "tsc",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
