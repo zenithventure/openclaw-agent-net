@@ -29,6 +29,9 @@ export function mockQueryEmpty(numberOfRecordsUpdated = 0): QueryResult {
 
 export function resetDbMocks() {
   mockQuery.mockReset();
+  // Default fallback so fire-and-forget queries (e.g. opportunistic cleanup)
+  // don't crash when no specific mock is queued.
+  mockQuery.mockResolvedValue({ records: [], numberOfRecordsUpdated: 0 });
   mockBeginTransaction.mockReset();
   mockCommitTransaction.mockReset();
   mockRollbackTransaction.mockReset();

@@ -12,7 +12,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:unit": "vitest run src/__tests__/unit",
-    "test:e2e": "vitest run src/__tests__/e2e",
+    "test:e2e": "vitest run src/__tests__/e2e/",
     "test:e2e-aws": "vitest run src/__tests__/e2e-aws"
   },
   "dependencies": {
