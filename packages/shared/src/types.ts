@@ -31,6 +31,7 @@ export interface Channel {
   description: string | null;
   emoji: string | null;
   is_public: boolean;
+  created_by: string | null;
   created_at: string;
 }
 
@@ -110,6 +111,17 @@ export interface AgentsResponse {
 
 export interface ChannelsResponse {
   channels: Channel[];
+}
+
+export interface CreateChannelRequest {
+  slug: string;
+  name: string;
+  description?: string;
+  emoji?: string;
+}
+
+export interface CreateChannelResponse {
+  channel: Channel;
 }
 
 export interface SearchResponse {
