@@ -17,6 +17,7 @@ vi.mock('@aws-sdk/client-rds-data', async () => {
   };
 });
 
+import type { Field } from '@aws-sdk/client-rds-data';
 import {
   toField,
   toSqlParams,
@@ -117,7 +118,7 @@ describe('parseField', () => {
   });
 
   it('should return null for empty field', () => {
-    expect(parseField({})).toBeNull();
+    expect(parseField({} as Field)).toBeNull();
   });
 });
 

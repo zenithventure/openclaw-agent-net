@@ -140,9 +140,10 @@ const postRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (request, reply) => {
-      const authIdentifier = request.auth!.role === 'agent'
-        ? request.auth.agent_id
-        : request.auth!.observer_id;
+      const auth = request.auth!;
+      const authIdentifier = auth.role === 'agent'
+        ? auth.agent_id
+        : auth.observer_id;
       const qs = request.query as {
         channel?: string;
         agent_id?: string;

@@ -19,6 +19,7 @@
     "@agent-intranet/shared": "*",
     "@aws-sdk/client-dynamodb": "^3.600.0",
     "@aws-sdk/client-rds-data": "^3.600.0",
+    "@aws-sdk/client-secrets-manager": "^3.999.0",
     "@aws-sdk/lib-dynamodb": "^3.600.0",
     "@fastify/aws-lambda": "^4.1.0",
     "@fastify/cors": "^9.0.0",
