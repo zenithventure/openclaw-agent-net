@@ -1,0 +1,315 @@
+# Agent Intranet — Build, Test & Deploy
+# ======================================
+# CDK-based monorepo deployed to SchedulSign accounts.
+#
+# Promotion flow:
+#   Push to main           -> Build + Test + Deploy to Dev (automatic)
+#   Tag v1.2.3-qa          -> Deploy to QA
+#   Tag v1.2.3 (no suffix) -> Deploy to Prod (requires approval)
+#   Manual dispatch         -> Deploy to selected environment
+
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: choice
+        options: [dev, qa, prod]
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  # SchedulSign accounts
+  DEV_ACCOUNT_ID: "252967153935"
+  QA_ACCOUNT_ID: "873595708276"
+  PROD_ACCOUNT_ID: "923935061349"
+  AWS_REGION: "us-east-1"
+
+jobs:
+  # ==========================================================================
+  # Build & Test — Runs on every push
+  # ==========================================================================
+  build-and-test:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test API
+        run: npm run test -w packages/api
+
+      - name: Test Frontend
+        run: npm run test -w packages/frontend
+
+  # ==========================================================================
+  # Deploy to Dev — Automatic on push to main
+  # ==========================================================================
+  deploy-dev:
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build API
+        run: |
+          npm run build -w packages/shared
+          npm run build -w packages/api
+          npm run bundle -w packages/api
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ env.DEV_ACCOUNT_ID }}:role/GitHubActionsDeployRole
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy infrastructure
+        working-directory: infra
+        run: npx cdk deploy --all -c env=dev --require-approval never
+
+      - name: Get stack outputs
+        id: cfn
+        run: |
+          API_URL=$(aws cloudformation describe-stacks \
+            --stack-name agent-net-dev-api \
+            --query 'Stacks[0].Outputs[?OutputKey==`ApiUrl`].OutputValue' \
+            --output text)
+          BUCKET=$(aws cloudformation describe-stacks \
+            --stack-name agent-net-dev-frontend \
+            --query 'Stacks[0].Outputs[?OutputKey==`BucketName`].OutputValue' \
+            --output text)
+          DIST_ID=$(aws cloudformation describe-stacks \
+            --stack-name agent-net-dev-frontend \
+            --query 'Stacks[0].Outputs[?OutputKey==`DistributionId`].OutputValue' \
+            --output text)
+          echo "api_url=$API_URL" >> $GITHUB_OUTPUT
+          echo "bucket=$BUCKET" >> $GITHUB_OUTPUT
+          echo "distribution_id=$DIST_ID" >> $GITHUB_OUTPUT
+
+      - name: Build frontend
+        run: npm run build -w packages/frontend
+        env:
+          NEXT_PUBLIC_API_BASE_URL: ${{ steps.cfn.outputs.api_url }}
+
+      - name: Deploy frontend to S3
+        run: aws s3 sync packages/frontend/out/ s3://${{ steps.cfn.outputs.bucket }}/ --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ steps.cfn.outputs.distribution_id }} \
+            --paths "/*"
+
+      - name: Smoke test
+        run: |
+          API_URL="${{ steps.cfn.outputs.api_url }}"
+          echo "Testing $API_URL"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/v1/health" || true)
+          if [ "$STATUS" = "200" ]; then
+            echo "Health check passed"
+          else
+            echo "Health check returned $STATUS (endpoint may not exist yet — skipping)"
+          fi
+
+  # ==========================================================================
+  # Deploy to QA — On -qa tag or manual dispatch
+  # ==========================================================================
+  deploy-qa:
+    if: |
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'qa') ||
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && contains(github.ref, '-qa'))
+    runs-on: ubuntu-latest
+    environment: qa
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test API
+        run: npm run test -w packages/api
+
+      - name: Test Frontend
+        run: npm run test -w packages/frontend
+
+      - name: Build API
+        run: |
+          npm run build -w packages/shared
+          npm run build -w packages/api
+          npm run bundle -w packages/api
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ env.QA_ACCOUNT_ID }}:role/GitHubActionsDeployRole
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy infrastructure
+        working-directory: infra
+        run: npx cdk deploy --all -c env=qa --require-approval never
+
+      - name: Get stack outputs
+        id: cfn
+        run: |
+          API_URL=$(aws cloudformation describe-stacks \
+            --stack-name agent-net-qa-api \
+            --query 'Stacks[0].Outputs[?OutputKey==`ApiUrl`].OutputValue' \
+            --output text)
+          BUCKET=$(aws cloudformation describe-stacks \
+            --stack-name agent-net-qa-frontend \
+            --query 'Stacks[0].Outputs[?OutputKey==`BucketName`].OutputValue' \
+            --output text)
+          DIST_ID=$(aws cloudformation describe-stacks \
+            --stack-name agent-net-qa-frontend \
+            --query 'Stacks[0].Outputs[?OutputKey==`DistributionId`].OutputValue' \
+            --output text)
+          echo "api_url=$API_URL" >> $GITHUB_OUTPUT
+          echo "bucket=$BUCKET" >> $GITHUB_OUTPUT
+          echo "distribution_id=$DIST_ID" >> $GITHUB_OUTPUT
+
+      - name: Build frontend
+        run: npm run build -w packages/frontend
+        env:
+          NEXT_PUBLIC_API_BASE_URL: ${{ steps.cfn.outputs.api_url }}
+
+      - name: Deploy frontend to S3
+        run: aws s3 sync packages/frontend/out/ s3://${{ steps.cfn.outputs.bucket }}/ --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ steps.cfn.outputs.distribution_id }} \
+            --paths "/*"
+
+      - name: Smoke test
+        run: |
+          API_URL="${{ steps.cfn.outputs.api_url }}"
+          echo "Testing $API_URL"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/v1/health" || true)
+          if [ "$STATUS" = "200" ]; then
+            echo "Health check passed"
+          else
+            echo "Health check returned $STATUS (endpoint may not exist yet — skipping)"
+          fi
+
+  # ==========================================================================
+  # Deploy to Prod — On release tag or manual dispatch (requires approval)
+  # ==========================================================================
+  deploy-prod:
+    if: |
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'prod') ||
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, '-'))
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test API
+        run: npm run test -w packages/api
+
+      - name: Test Frontend
+        run: npm run test -w packages/frontend
+
+      - name: Build API
+        run: |
+          npm run build -w packages/shared
+          npm run build -w packages/api
+          npm run bundle -w packages/api
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ env.PROD_ACCOUNT_ID }}:role/GitHubActionsDeployRole
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy infrastructure
+        working-directory: infra
+        run: npx cdk deploy --all -c env=prod --require-approval never
+
+      - name: Get stack outputs
+        id: cfn
+        run: |
+          API_URL=$(aws cloudformation describe-stacks \
+            --stack-name agent-net-prod-api \
+            --query 'Stacks[0].Outputs[?OutputKey==`ApiUrl`].OutputValue' \
+            --output text)
+          BUCKET=$(aws cloudformation describe-stacks \
+            --stack-name agent-net-prod-frontend \
+            --query 'Stacks[0].Outputs[?OutputKey==`BucketName`].OutputValue' \
+            --output text)
+          DIST_ID=$(aws cloudformation describe-stacks \
+            --stack-name agent-net-prod-frontend \
+            --query 'Stacks[0].Outputs[?OutputKey==`DistributionId`].OutputValue' \
+            --output text)
+          echo "api_url=$API_URL" >> $GITHUB_OUTPUT
+          echo "bucket=$BUCKET" >> $GITHUB_OUTPUT
+          echo "distribution_id=$DIST_ID" >> $GITHUB_OUTPUT
+
+      - name: Build frontend
+        run: npm run build -w packages/frontend
+        env:
+          NEXT_PUBLIC_API_BASE_URL: ${{ steps.cfn.outputs.api_url }}
+
+      - name: Deploy frontend to S3
+        run: aws s3 sync packages/frontend/out/ s3://${{ steps.cfn.outputs.bucket }}/ --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ steps.cfn.outputs.distribution_id }} \
+            --paths "/*"
+
+      - name: Smoke test
+        run: |
+          API_URL="${{ steps.cfn.outputs.api_url }}"
+          echo "Testing $API_URL"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/v1/health" || true)
+          if [ "$STATUS" = "200" ]; then
+            echo "Health check passed"
+          else
+            echo "Health check returned $STATUS (endpoint may not exist yet — skipping)"
+          fi

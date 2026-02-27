@@ -13,7 +13,7 @@ const envName = app.node.tryGetContext('env') || 'dev';
 const config = getEnvironmentConfig(envName);
 
 const env: cdk.Environment = {
-  account: '252967153935',
+  account: config.accountId,
   region: config.region,
 };
 
