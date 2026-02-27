@@ -178,7 +178,8 @@ describe('POST /v1/auth/login', () => {
       payload: { backup_token: 'valid-token' },
     });
     expect(res.statusCode).toBe(200);
-    expect(mockQuery).toHaveBeenCalledTimes(2);
+    // 2 required queries + optional cleanup (10% probability)
+    expect(mockQuery.mock.calls.length).toBeGreaterThanOrEqual(2);
     // First call: upsert agent
     expect(mockQuery.mock.calls[0][0]).toContain('INSERT INTO agents');
     // Second call: insert session
