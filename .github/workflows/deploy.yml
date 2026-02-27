@@ -55,7 +55,7 @@ jobs:
         run: npm run typecheck
 
       - name: Test API
-        run: npm run test -w packages/api
+        run: npm run test:unit -w packages/api && npm run test:e2e -w packages/api
 
       - name: Test Frontend
         run: npm run test -w packages/frontend
@@ -127,16 +127,13 @@ jobs:
             --distribution-id ${{ steps.cfn.outputs.distribution_id }} \
             --paths "/*"
 
-      - name: Smoke test
-        run: |
-          API_URL="${{ steps.cfn.outputs.api_url }}"
-          echo "Testing $API_URL"
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/v1/health" || true)
-          if [ "$STATUS" = "200" ]; then
-            echo "Health check passed"
-          else
-            echo "Health check returned $STATUS (endpoint may not exist yet — skipping)"
-          fi
+      - name: Integration tests
+        if: ${{ vars.RUN_E2E_AWS == 'true' }}
+        run: npm run test:e2e-aws -w packages/api
+        env:
+          API_URL: ${{ steps.cfn.outputs.api_url }}
+          BACKUP_TOKEN: ${{ secrets.BACKUP_TOKEN }}
+          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
 
   # ==========================================================================
   # Deploy to QA — On -qa tag or manual dispatch
@@ -162,7 +159,7 @@ jobs:
         run: npm run typecheck
 
       - name: Test API
-        run: npm run test -w packages/api
+        run: npm run test:unit -w packages/api && npm run test:e2e -w packages/api
 
       - name: Test Frontend
         run: npm run test -w packages/frontend
@@ -215,16 +212,13 @@ jobs:
             --distribution-id ${{ steps.cfn.outputs.distribution_id }} \
             --paths "/*"
 
-      - name: Smoke test
-        run: |
-          API_URL="${{ steps.cfn.outputs.api_url }}"
-          echo "Testing $API_URL"
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/v1/health" || true)
-          if [ "$STATUS" = "200" ]; then
-            echo "Health check passed"
-          else
-            echo "Health check returned $STATUS (endpoint may not exist yet — skipping)"
-          fi
+      - name: Integration tests
+        if: ${{ vars.RUN_E2E_AWS == 'true' }}
+        run: npm run test:e2e-aws -w packages/api
+        env:
+          API_URL: ${{ steps.cfn.outputs.api_url }}
+          BACKUP_TOKEN: ${{ secrets.BACKUP_TOKEN }}
+          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
 
   # ==========================================================================
   # Deploy to Prod — On release tag or manual dispatch (requires approval)
@@ -250,7 +244,7 @@ jobs:
         run: npm run typecheck
 
       - name: Test API
-        run: npm run test -w packages/api
+        run: npm run test:unit -w packages/api && npm run test:e2e -w packages/api
 
       - name: Test Frontend
         run: npm run test -w packages/frontend
@@ -303,13 +297,10 @@ jobs:
             --distribution-id ${{ steps.cfn.outputs.distribution_id }} \
             --paths "/*"
 
-      - name: Smoke test
-        run: |
-          API_URL="${{ steps.cfn.outputs.api_url }}"
-          echo "Testing $API_URL"
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/v1/health" || true)
-          if [ "$STATUS" = "200" ]; then
-            echo "Health check passed"
-          else
-            echo "Health check returned $STATUS (endpoint may not exist yet — skipping)"
-          fi
+      - name: Integration tests
+        if: ${{ vars.RUN_E2E_AWS == 'true' }}
+        run: npm run test:e2e-aws -w packages/api
+        env:
+          API_URL: ${{ steps.cfn.outputs.api_url }}
+          BACKUP_TOKEN: ${{ secrets.BACKUP_TOKEN }}
+          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
