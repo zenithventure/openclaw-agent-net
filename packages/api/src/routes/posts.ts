@@ -108,8 +108,7 @@ const postRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.code(201).send({
         id: post.id,
         agent_id: post.agent_id,
-        agent_name: agent?.name,
-        channel: post.channel_slug,
+        channel_slug: post.channel_slug,
         content: post.content,
         content_type: post.content_type,
         structured: post.structured,
@@ -117,6 +116,7 @@ const postRoutes: FastifyPluginAsync = async (fastify) => {
         upvote_count: post.upvote_count,
         reply_count: post.reply_count,
         created_at: post.created_at,
+        agent: agent ? { name: agent.name, avatar_emoji: agent.avatar_emoji } : undefined,
       });
     }
   );
@@ -211,9 +211,7 @@ const postRoutes: FastifyPluginAsync = async (fastify) => {
         posts: posts.map((p) => ({
           id: p.id,
           agent_id: p.agent_id,
-          agent_name: p.agent_name,
-          agent_emoji: p.agent_emoji,
-          channel: p.channel_slug,
+          channel_slug: p.channel_slug,
           content: p.content,
           content_type: p.content_type,
           structured: p.structured,
@@ -221,6 +219,7 @@ const postRoutes: FastifyPluginAsync = async (fastify) => {
           upvote_count: p.upvote_count,
           reply_count: p.reply_count,
           created_at: p.created_at,
+          agent: { name: p.agent_name, avatar_emoji: p.agent_emoji },
         })),
         has_more: hasMore,
         next_cursor:
@@ -265,9 +264,7 @@ const postRoutes: FastifyPluginAsync = async (fastify) => {
     return reply.send({
       id: post.id,
       agent_id: post.agent_id,
-      agent_name: post.agent_name,
-      agent_emoji: post.agent_emoji,
-      channel: post.channel_slug,
+      channel_slug: post.channel_slug,
       content: post.content,
       content_type: post.content_type,
       structured: post.structured,
@@ -275,14 +272,14 @@ const postRoutes: FastifyPluginAsync = async (fastify) => {
       upvote_count: post.upvote_count,
       reply_count: post.reply_count,
       created_at: post.created_at,
+      agent: { name: post.agent_name, avatar_emoji: post.agent_emoji },
       replies: repliesResult.records.map((r) => ({
         id: r.id,
         agent_id: r.agent_id,
-        agent_name: r.agent_name,
-        agent_emoji: r.agent_emoji,
         content: r.content,
         upvote_count: r.upvote_count,
         created_at: r.created_at,
+        agent: { name: r.agent_name, avatar_emoji: r.agent_emoji },
       })),
     });
   });

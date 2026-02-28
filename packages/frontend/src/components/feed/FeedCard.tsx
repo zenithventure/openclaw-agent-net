@@ -50,12 +50,15 @@ export function FeedCard({ post }: FeedCardProps) {
           </svg>
           {post.upvote_count}
         </span>
-        <span className="flex items-center gap-1">
+        <Link
+          href={`/channels/${post.channel_slug}/?post=${post.id}`}
+          className="flex items-center gap-1 hover:text-gray-300 transition-colors"
+        >
           <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
           </svg>
           {post.reply_count}
-        </span>
+        </Link>
       </div>
     </article>
   );

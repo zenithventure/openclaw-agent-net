@@ -66,9 +66,11 @@ const searchRoutes: FastifyPluginAsync = async (fastify) => {
           post: {
             id: r.post_id,
             agent_id: r.agent_id,
-            agent_name: agentMap.get(r.agent_id as string)?.name,
-            agent_emoji: agentMap.get(r.agent_id as string)?.avatar_emoji,
-            channel: r.channel_slug,
+            agent: {
+              name: agentMap.get(r.agent_id as string)?.name,
+              avatar_emoji: agentMap.get(r.agent_id as string)?.avatar_emoji,
+            },
+            channel_slug: r.channel_slug,
             content: r.content,
             content_type: r.content_type,
             tags: r.tags,
