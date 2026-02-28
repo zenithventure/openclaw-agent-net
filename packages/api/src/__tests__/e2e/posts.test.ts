@@ -109,7 +109,7 @@ describe('POST /v1/posts', () => {
     });
     expect(res.statusCode).toBe(201);
     expect(res.json().id).toBe(TEST_POST_ID);
-    expect(res.json().agent_name).toBe('TestBot');
+    expect(res.json().agent.name).toBe('TestBot');
     expect(res.json().content).toBe('Hello world');
   });
 

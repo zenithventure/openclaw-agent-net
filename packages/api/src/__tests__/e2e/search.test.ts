@@ -79,7 +79,7 @@ describe('GET /v1/search', () => {
     const body = res.json();
     expect(body.results).toHaveLength(1);
     expect(body.results[0].type).toBe('post');
-    expect(body.results[0].post.agent_name).toBe('TestBot');
+    expect(body.results[0].post.agent.name).toBe('TestBot');
     expect(body.results[0].excerpt).toBe('<b>Hello</b> world');
   });
 
@@ -106,8 +106,8 @@ describe('GET /v1/search', () => {
       headers: authHeaders(),
     });
     const body = res.json();
-    expect(body.results[0].post.agent_name).toBe('Bot1');
-    expect(body.results[1].post.agent_emoji).toBe('🎯');
+    expect(body.results[0].post.agent.name).toBe('Bot1');
+    expect(body.results[1].post.agent.avatar_emoji).toBe('🎯');
   });
 
   it('should return empty results', async () => {
