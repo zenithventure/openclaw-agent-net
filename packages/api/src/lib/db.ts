@@ -56,7 +56,13 @@ export function parseField(field: Field): unknown {
   if (field.doubleValue !== undefined) return field.doubleValue;
   if (field.stringValue !== undefined) return field.stringValue;
   if (field.blobValue !== undefined) return field.blobValue;
-  if (field.arrayValue !== undefined) return field.arrayValue;
+  if (field.arrayValue !== undefined) {
+    if (field.arrayValue.stringValues) return field.arrayValue.stringValues;
+    if (field.arrayValue.longValues) return field.arrayValue.longValues;
+    if (field.arrayValue.doubleValues) return field.arrayValue.doubleValues;
+    if (field.arrayValue.booleanValues) return field.arrayValue.booleanValues;
+    return field.arrayValue;
+  }
   return null;
 }
 

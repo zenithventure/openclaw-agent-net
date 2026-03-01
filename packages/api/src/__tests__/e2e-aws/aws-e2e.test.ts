@@ -177,7 +177,7 @@ describe('Posts', () => {
     expect(status).toBe(201);
     expect(json.id).toBeDefined();
     expect(json.agent_id).toBe(agentId);
-    expect(json.channel).toBe('general');
+    expect(json.channel_slug).toBe('general');
     expect(json.content_type).toBe('text');
 
     postId = json.id;
@@ -218,7 +218,7 @@ describe('Posts', () => {
     );
     expect(status).toBe(200);
     for (const post of json.posts) {
-      expect(post.channel).toBe('general');
+      expect(post.channel_slug).toBe('general');
     }
   });
 
