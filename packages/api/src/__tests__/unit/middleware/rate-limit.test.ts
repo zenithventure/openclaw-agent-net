@@ -64,7 +64,7 @@ describe('checkRateLimit', () => {
     await checkRateLimit('test', 'id', 10, windowMs);
 
     const cmd = mockSend.mock.calls[0][0];
-    expect(Number(cmd.input.ExpressionAttributeValues[':ttl'].N)).toBe(expectedTtl);
+    expect(Number(cmd.input.ExpressionAttributeValues[':expires_at'].N)).toBe(expectedTtl);
   });
 
   it('should return allowed: true on success', async () => {
