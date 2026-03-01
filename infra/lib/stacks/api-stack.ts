@@ -4,6 +4,7 @@ import * as apigatewayv2 from 'aws-cdk-lib/aws-apigatewayv2';
 import * as integrations from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as rds from 'aws-cdk-lib/aws-rds';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
@@ -84,7 +85,7 @@ export class ApiStack extends cdk.Stack {
       apiName: `${config.prefix}-api`,
       corsPreflight: {
         allowOrigins: [
-          `https://${config.domainName}`,
+          ...(config.domainName ? [`https://${config.domainName}`] : []),
           'https://d33wvgocwnwbjw.cloudfront.net',
           'http://localhost:3000',
         ],
@@ -109,5 +110,32 @@ export class ApiStack extends cdk.Stack {
 
     new cdk.CfnOutput(this, 'ApiUrl', { value: this.httpApi.apiEndpoint });
     new cdk.CfnOutput(this, 'ApiFunctionArn', { value: this.apiFunction.functionArn });
+
+    // Custom domain + ACM certificate (prod only)
+    if (config.apiDomainName) {
+      const apiCertificate = new acm.Certificate(this, 'ApiCertificate', {
+        domainName: config.apiDomainName,
+        validation: acm.CertificateValidation.fromDns(),
+      });
+
+      const apiDomain = new apigatewayv2.DomainName(this, 'ApiDomainName', {
+        domainName: config.apiDomainName,
+        certificate: apiCertificate,
+      });
+
+      new apigatewayv2.ApiMapping(this, 'ApiMapping', {
+        api: this.httpApi,
+        domainName: apiDomain,
+      });
+
+      new cdk.CfnOutput(this, 'ApiCertificateArn', {
+        value: apiCertificate.certificateArn,
+        description: 'ACM certificate ARN — check ACM console for DNS validation CNAME records',
+      });
+      new cdk.CfnOutput(this, 'ApiCustomDomainName', {
+        value: apiDomain.regionalDomainName,
+        description: 'API Gateway regional domain — use as CNAME target for net-api on Namecheap',
+      });
+    }
   }
 }

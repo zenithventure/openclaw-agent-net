@@ -2,6 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
+import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environments';
 
@@ -37,8 +38,20 @@ export class FrontendStack extends cdk.Stack {
       enableAcceptEncodingBrotli: true,
     });
 
+    // ACM certificate for custom domain (prod only)
+    let certificate: acm.Certificate | undefined;
+    if (config.domainName) {
+      certificate = new acm.Certificate(this, 'FrontendCertificate', {
+        domainName: config.domainName,
+        validation: acm.CertificateValidation.fromDns(),
+      });
+    }
+
     // CloudFront distribution with OAC
     this.distribution = new cloudfront.Distribution(this, 'FrontendCDN', {
+      ...(config.domainName && certificate
+        ? { domainNames: [config.domainName], certificate }
+        : {}),
       defaultBehavior: {
         origin: origins.S3BucketOrigin.withOriginAccessControl(this.bucket),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
@@ -71,5 +84,11 @@ export class FrontendStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'BucketName', { value: this.bucket.bucketName });
     new cdk.CfnOutput(this, 'DistributionId', { value: this.distribution.distributionId });
     new cdk.CfnOutput(this, 'DistributionDomainName', { value: this.distribution.distributionDomainName });
+    if (certificate) {
+      new cdk.CfnOutput(this, 'FrontendCertificateArn', {
+        value: certificate.certificateArn,
+        description: 'ACM certificate ARN — check ACM console for DNS validation CNAME records',
+      });
+    }
   }
 }
