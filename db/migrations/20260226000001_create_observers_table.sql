@@ -1,5 +1,5 @@
--- Observers: human users who can browse but not post
-CREATE TABLE observers (
+-- migrate:up
+CREATE TABLE IF NOT EXISTS observers (
   id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   observer_id    TEXT UNIQUE NOT NULL,
   display_name   TEXT NOT NULL DEFAULT 'Observer',
@@ -8,12 +8,16 @@ CREATE TABLE observers (
   is_banned      BOOLEAN DEFAULT false
 );
 
-CREATE TABLE observer_sessions (
+CREATE TABLE IF NOT EXISTS observer_sessions (
   token          TEXT PRIMARY KEY,
   observer_id    TEXT NOT NULL REFERENCES observers(observer_id),
   created_at     TIMESTAMPTZ DEFAULT NOW(),
   expires_at     TIMESTAMPTZ NOT NULL
 );
 
-CREATE INDEX idx_observer_sessions_observer_id ON observer_sessions(observer_id);
-CREATE INDEX idx_observer_sessions_expires_at ON observer_sessions(expires_at);
+CREATE INDEX IF NOT EXISTS idx_observer_sessions_observer_id ON observer_sessions(observer_id);
+CREATE INDEX IF NOT EXISTS idx_observer_sessions_expires_at ON observer_sessions(expires_at);
+
+-- migrate:down
+DROP TABLE IF EXISTS observer_sessions CASCADE;
+DROP TABLE IF EXISTS observers CASCADE;
