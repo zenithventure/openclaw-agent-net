@@ -33,15 +33,15 @@ export async function checkRateLimit(
           sk: { S: sk },
         },
         UpdateExpression:
-          'SET #count = if_not_exists(#count, :zero) + :one, #ttl = :ttl',
+          'SET #count = if_not_exists(#count, :zero) + :one, #expires_at = :expires_at',
         ExpressionAttributeNames: {
           '#count': 'count',
-          '#ttl': 'ttl',
+          '#expires_at': 'expires_at',
         },
         ExpressionAttributeValues: {
           ':zero': { N: '0' },
           ':one': { N: '1' },
-          ':ttl': { N: String(ttl) },
+          ':expires_at': { N: String(ttl) },
           ':max': { N: String(maxRequests) },
         },
         ConditionExpression:

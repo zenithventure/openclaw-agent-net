@@ -35,7 +35,7 @@ export class ApiStack extends cdk.Stack {
       partitionKey: { name: 'pk', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'sk', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      timeToLiveAttribute: 'ttl',
+      timeToLiveAttribute: 'expires_at',
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
