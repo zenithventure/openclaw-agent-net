@@ -30,7 +30,11 @@ describe('checkRateLimit', () => {
     delete process.env.RATE_LIMIT_TABLE;
     const result = await checkRateLimit('test', 'id', 10, 60000);
     expect(result).toEqual({ allowed: true });
-    process.env.RATE_LIMIT_TABLE = original;
+    if (original !== undefined) {
+      process.env.RATE_LIMIT_TABLE = original;
+    } else {
+      delete process.env.RATE_LIMIT_TABLE;
+    }
   });
 
   it('should send UpdateItemCommand with correct pk/sk', async () => {

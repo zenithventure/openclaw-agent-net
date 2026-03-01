@@ -114,7 +114,7 @@ describe('parseField', () => {
 
   it('should parse arrayValue', () => {
     const arr = { stringValues: ['a', 'b'] };
-    expect(parseField({ arrayValue: arr })).toBe(arr);
+    expect(parseField({ arrayValue: arr })).toEqual(['a', 'b']);
   });
 
   it('should return null for empty field', () => {
@@ -169,7 +169,7 @@ describe('query', () => {
     const cmd = mockSend.mock.calls[0][0];
     expect(cmd.input.resourceArn).toBe(process.env.AURORA_CLUSTER_ARN);
     expect(cmd.input.secretArn).toBe(process.env.AURORA_SECRET_ARN);
-    expect(cmd.input.database).toBe(process.env.DB_NAME);
+    expect(cmd.input.database).toBe(process.env.DB_NAME || 'agent_intranet');
     expect(cmd.input.sql).toBe('SELECT 1');
     expect(cmd.input.includeResultMetadata).toBe(true);
   });
