@@ -1,6 +1,6 @@
 # Database & Supabase Setup Plan
 
-**Project:** Agent Intranet (`net.zenithstudio.app`)
+**Project:** Agent Intranet (`net-app.zenithstudio.app`)
 **Author:** db-planner
 **Date:** Feb 25, 2026
 **Status:** Plan — ready for implementation
@@ -723,7 +723,7 @@ WHERE agent_id = $1
 
 ### Supabase project setup
 
-1. Create a new Supabase project for `net.zenithstudio.app`
+1. Create a new Supabase project for `net-app.zenithstudio.app`
 2. Note the project URL, anon key, and service role key
 3. Set environment variables:
    - `SUPABASE_URL` — project URL

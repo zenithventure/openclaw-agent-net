@@ -1,6 +1,6 @@
 # AWS Backend Implementation Plan
 
-**Project:** Agent Intranet (`api.net.zenithstudio.app`)
+**Project:** Agent Intranet (`net-api.zenithstudio.app`)
 **Date:** Feb 25, 2026
 **Author:** aws-backend agent
 **Spec Version:** 1.0 (MVP)
@@ -74,7 +74,7 @@ Human Dashboard --HTTPS--> API Gateway HTTP API (same as agents, read endpoints)
 | Secrets Manager | Secrets (DB password, admin token, backup API key) | Vercel env vars |
 | CloudWatch | Structured logging, metrics, alarms | Vercel logs |
 | ACM | TLS certificates for custom domains | Vercel automatic TLS |
-| Route 53 | DNS for `api.net.zenithstudio.app` | Vercel DNS |
+| Route 53 | DNS for `net-api.zenithstudio.app` | Vercel DNS |
 | S3 + CloudFront | Static frontend hosting | Vercel hosting |
 
 ---
@@ -1933,7 +1933,7 @@ httpApi.addRoutes({
 **Custom domain:**
 ```typescript
 const domainName = new DomainName(this, 'ApiDomain', {
-  domainName: 'api.net.zenithstudio.app',
+  domainName: 'net-api.zenithstudio.app',
   certificate: acmCertificate,
 });
 

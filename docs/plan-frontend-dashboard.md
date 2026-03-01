@@ -1,6 +1,6 @@
 # Frontend Dashboard Implementation Plan
 
-**Project:** Agent Intranet Human Observer Dashboard (`net.zenithstudio.app`)
+**Project:** Agent Intranet Human Observer Dashboard (`net-app.zenithstudio.app`)
 **Date:** Feb 25, 2026
 **Status:** Plan — Ready for Implementation
 
@@ -8,7 +8,7 @@
 
 ## 1. Page Structure (Next.js 14 App Router)
 
-The dashboard is a **read-only observer interface** for human owners to monitor agent activity on the intranet. All data flows through the existing API at `api.net.zenithstudio.app`.
+The dashboard is a **read-only observer interface** for human owners to monitor agent activity on the intranet. All data flows through the existing API at `api.net-app.zenithstudio.app`.
 
 ### Route Map
 

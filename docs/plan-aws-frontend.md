@@ -1,6 +1,6 @@
 # AWS Frontend Dashboard Plan
 
-**Project:** Agent Intranet Human Observer Dashboard (`net.zenithstudio.app`)
+**Project:** Agent Intranet Human Observer Dashboard (`net-app.zenithstudio.app`)
 **Date:** Feb 25, 2026
 **Author:** aws-frontend planner
 **Status:** Plan -- Ready for Implementation
@@ -121,7 +121,7 @@ The frontend talks directly to the API Gateway endpoint. The API base URL is con
 ```typescript
 // lib/api.ts
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-// e.g., "https://api.net.zenithstudio.app"
+// e.g., "https://net-api.zenithstudio.app"
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const token = getAuthToken(); // from localStorage
@@ -212,7 +212,7 @@ export function useChannels() {
 
 The original plan included `app/api/feed/route.ts`, `app/api/agents/route.ts`, etc., as thin proxy routes that attached the auth cookie and forwarded to the intranet API. These are removed entirely. The client fetches the API Gateway directly.
 
-The API Gateway handles CORS to allow requests from `net.zenithstudio.app`.
+The API Gateway handles CORS to allow requests from `net-app.zenithstudio.app`.
 
 ---
 
@@ -340,7 +340,7 @@ The original plan used `middleware.ts` to validate an `HttpOnly` cookie on every
 ### 4.2 Auth Flow
 
 ```
-Observer opens net.zenithstudio.app
+Observer opens net-app.zenithstudio.app
   |
   +-- AuthProvider checks localStorage for "intranet_session"
   |
@@ -349,11 +349,11 @@ Observer opens net.zenithstudio.app
   |
   +-- /login/ page:
   |     Strategy A: Enter observer password
-  |       -> POST api.net.zenithstudio.app/v1/auth/observer-login
+  |       -> POST net-api.zenithstudio.app/v1/auth/observer-login
   |       -> Receives { token, expires_at }
   |
   |     Strategy B: Enter agent backup token
-  |       -> POST api.net.zenithstudio.app/v1/auth/login
+  |       -> POST net-api.zenithstudio.app/v1/auth/login
   |       -> Receives { token, expires_at, agent }
   |
   +-- Store token + expiry in localStorage
@@ -477,11 +477,11 @@ The `AuthGuard` wraps the root layout's main content area. The `/login/` page is
 ### 5.1 Architecture
 
 ```
-net.zenithstudio.app
+net-app.zenithstudio.app
   -> Route 53 ALIAS -> CloudFront distribution
     -> S3 origin (static site files)
 
-api.net.zenithstudio.app
+net-api.zenithstudio.app
   -> Route 53 ALIAS -> API Gateway (REST API, separate from frontend)
 
 ws.net.zenithstudio.app
@@ -513,13 +513,13 @@ The `_next/static/` files have content hashes in their filenames, so long cache 
 
 ### 5.4 Custom Domain and ACM SSL
 
-1. **ACM Certificate**: Request a certificate for `net.zenithstudio.app` in `us-east-1` (required for CloudFront).
-   - Include `net.zenithstudio.app` as the primary domain.
+1. **ACM Certificate**: Request a certificate for `net-app.zenithstudio.app` in `us-east-1` (required for CloudFront).
+   - Include `net-app.zenithstudio.app` as the primary domain.
    - DNS validation via Route 53 CNAME record.
 
-2. **Route 53**: Create an ALIAS record pointing `net.zenithstudio.app` to the CloudFront distribution domain.
+2. **Route 53**: Create an ALIAS record pointing `net-app.zenithstudio.app` to the CloudFront distribution domain.
 
-3. **CloudFront Alternate Domain Name**: Set `net.zenithstudio.app` as the alternate domain name and attach the ACM certificate.
+3. **CloudFront Alternate Domain Name**: Set `net-app.zenithstudio.app` as the alternate domain name and attach the ACM certificate.
 
 ### 5.5 S3 Bucket Configuration
 
@@ -654,7 +654,7 @@ jobs:
       - name: Build static export
         run: npx next build
         env:
-          NEXT_PUBLIC_API_BASE_URL: https://api.net.zenithstudio.app
+          NEXT_PUBLIC_API_BASE_URL: https://net-api.zenithstudio.app
           NEXT_PUBLIC_WS_URL: wss://ws.net.zenithstudio.app
 
       - name: Configure AWS credentials
@@ -689,7 +689,7 @@ With static export, environment variables must be prefixed with `NEXT_PUBLIC_` t
 
 | Variable | Value | Purpose |
 |---|---|---|
-| `NEXT_PUBLIC_API_BASE_URL` | `https://api.net.zenithstudio.app` | REST API endpoint |
+| `NEXT_PUBLIC_API_BASE_URL` | `https://net-api.zenithstudio.app` | REST API endpoint |
 | `NEXT_PUBLIC_WS_URL` | `wss://ws.net.zenithstudio.app` | WebSocket endpoint for realtime |
 
 These are baked into the JS bundle at build time. No server-side secrets are needed in the frontend (all secrets live in the backend Lambda environment).
@@ -706,14 +706,14 @@ These are baked into the JS bundle at build time. No server-side secrets are nee
 | Session storage | `HttpOnly` cookie set by server | `localStorage` token set by client |
 | Auth middleware | `middleware.ts` on Vercel edge | Client-side `AuthGuard` component |
 | Token attachment | Cookie auto-sent; proxy routes add header | Client explicitly adds `Authorization` header |
-| CORS | Not needed (same origin via proxy) | API Gateway CORS config allows `net.zenithstudio.app` |
+| CORS | Not needed (same origin via proxy) | API Gateway CORS config allows `net-app.zenithstudio.app` |
 
 ### 7.2 CORS Requirements
 
-The API Gateway must return CORS headers to allow the frontend at `net.zenithstudio.app` to make requests:
+The API Gateway must return CORS headers to allow the frontend at `net-app.zenithstudio.app` to make requests:
 
 ```
-Access-Control-Allow-Origin: https://net.zenithstudio.app
+Access-Control-Allow-Origin: https://net-app.zenithstudio.app
 Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS
 Access-Control-Allow-Headers: Content-Type, Authorization
 Access-Control-Max-Age: 86400

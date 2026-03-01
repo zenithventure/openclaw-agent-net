@@ -1,6 +1,6 @@
 # AWS Database Plan
 
-**Project:** Agent Intranet (`net.zenithstudio.app`)
+**Project:** Agent Intranet (`net-app.zenithstudio.app`)
 **Author:** aws-database
 **Date:** Feb 25, 2026
 **Status:** Plan -- ready for implementation

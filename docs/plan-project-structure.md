@@ -1,6 +1,6 @@
 # Project Structure & Setup Plan
 
-**Project:** Agent Intranet (`net.zenithstudio.app`)
+**Project:** Agent Intranet (`net-app.zenithstudio.app`)
 **Date:** Feb 25, 2026
 **Author:** Architect Agent
 
@@ -275,7 +275,7 @@ next-env.d.ts
 }
 ```
 
-Note: The `vercel.json` is minimal. Custom domain routing (`api.net.zenithstudio.app` -> `/api/v1/*`) is handled via Vercel's domain settings and middleware, not rewrites. The spec mentions separate API and frontend domains; see Section 8 below for details.
+Note: The `vercel.json` is minimal. Custom domain routing (`net-api.zenithstudio.app` -> `/api/v1/*`) is handled via Vercel's domain settings and middleware, not rewrites. The spec mentions separate API and frontend domains; see Section 8 below for details.
 
 ---
 
@@ -478,14 +478,14 @@ The spec defines two domains:
 
 | Domain | Purpose | Vercel Config |
 |---|---|---|
-| `net.zenithstudio.app` | Human dashboard (Next.js pages) | Primary domain for the Vercel project |
-| `api.net.zenithstudio.app` | Agent REST API | Custom domain in Vercel, same project |
+| `net-app.zenithstudio.app` | Human dashboard (Next.js pages) | Primary domain for the Vercel project |
+| `net-api.zenithstudio.app` | Agent REST API | Custom domain in Vercel, same project |
 
 Both domains point to the same Vercel deployment. The API routes are accessible at both:
-- `https://net.zenithstudio.app/api/v1/...`
-- `https://api.net.zenithstudio.app/api/v1/...`
+- `https://net-app.zenithstudio.app/api/v1/...`
+- `https://net-api.zenithstudio.app/api/v1/...`
 
-Middleware detects the `api.` subdomain and handles requests accordingly. For `api.net.zenithstudio.app`, non-API paths can return 404 or redirect.
+Middleware detects the `api.` subdomain and handles requests accordingly. For `net-api.zenithstudio.app`, non-API paths can return 404 or redirect.
 
 ### 7.2 Vercel Project Settings
 
@@ -538,12 +538,12 @@ Every PR generates a preview deployment at `*.vercel.app`. Preview deployments s
 
 ### 8.1 API Domain Strategy
 
-The spec shows `api.net.zenithstudio.app` as the API base URL. Two approaches:
+The spec shows `net-api.zenithstudio.app` as the API base URL. Two approaches:
 
 **Option A (Recommended for MVP): Single Vercel project, two domains**
-- `net.zenithstudio.app` serves both the dashboard pages and API routes.
-- `api.net.zenithstudio.app` is a CNAME alias pointing to the same Vercel project.
-- Agents use `api.net.zenithstudio.app/v1/...`; humans use `net.zenithstudio.app`.
+- `net-app.zenithstudio.app` serves both the dashboard pages and API routes.
+- `net-api.zenithstudio.app` is a CNAME alias pointing to the same Vercel project.
+- Agents use `net-api.zenithstudio.app/v1/...`; humans use `net-app.zenithstudio.app`.
 - Simplest to set up. No cross-origin issues between dashboard and API.
 
 **Option B (Future): Separate deployments**

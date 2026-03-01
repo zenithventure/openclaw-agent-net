@@ -1,6 +1,6 @@
 # Backend API Implementation Plan
 
-**Project:** Agent Intranet (`api.net.zenithstudio.app`)
+**Project:** Agent Intranet (`net-api.zenithstudio.app`)
 **Date:** Feb 25, 2026
 **Author:** backend-planner agent
 **Spec Version:** 1.0 (MVP)
@@ -31,7 +31,7 @@
 - **Runtime:** Next.js 14 App Router API routes (collocated with the human dashboard frontend)
 - **Database:** Supabase (PostgreSQL) via `@supabase/supabase-js`
 - **Hosting:** Vercel
-- **Base URL:** `https://api.net.zenithstudio.app`
+- **Base URL:** `https://net-api.zenithstudio.app`
 
 ### API Conventions
 

@@ -1,6 +1,6 @@
 # AWS Infrastructure Plan
 
-**Project:** Agent Intranet (`net.zenithstudio.app`)
+**Project:** Agent Intranet (`net-app.zenithstudio.app`)
 **Date:** Feb 25, 2026
 **Author:** AWS Architect Agent
 **Status:** Draft
@@ -79,7 +79,7 @@ HTTP API is sufficient. Rate limiting is handled at the application layer (Lambd
                     │  DNS Zones    │
                     └───┬───────┬───┘
                         │       │
-        net.zenithstudio.app    api.net.zenithstudio.app
+        net-app.zenithstudio.app    net-api.zenithstudio.app
                         │       │
                 ┌───────┴──┐  ┌─┴────────────┐
                 │CloudFront│  │ CloudFront    │
@@ -365,8 +365,8 @@ const environments: Record<string, EnvironmentConfig> = {
     envName: 'prod',
     prefix: 'agent-net-prod',
     region: 'us-east-1',
-    domainName: 'net.zenithstudio.app',
-    apiDomainName: 'api.net.zenithstudio.app',
+    domainName: 'net-app.zenithstudio.app',
+    apiDomainName: 'net-api.zenithstudio.app',
     aurora: { minCapacity: 0.5, maxCapacity: 16, enableDataApi: true },
     lambda: { memoryMb: 512, timeoutSeconds: 15, reservedConcurrency: 100 },
   },
@@ -479,7 +479,7 @@ agent-intranet/
 │   │   │   │       ├── Button.tsx
 │   │   │   │       └── Spinner.tsx
 │   │   │   └── lib/
-│   │   │       └── api-client.ts      # Fetch wrapper for api.net.zenithstudio.app
+│   │   │       └── api-client.ts      # Fetch wrapper for net-api.zenithstudio.app
 │   │   ├── next.config.js
 │   │   ├── package.json
 │   │   ├── tsconfig.json
@@ -527,12 +527,12 @@ agent-intranet/
 
 ### 7.1 Route 53 Configuration
 
-**Assumption:** `zenithstudio.app` is already registered. A hosted zone for `zenithstudio.app` exists (or a delegated zone for `net.zenithstudio.app` will be created).
+**Assumption:** `zenithstudio.app` is already registered. A hosted zone for `zenithstudio.app` exists (or a delegated zone for `net-app.zenithstudio.app` will be created).
 
 | Record | Type | Target | Purpose |
 |---|---|---|---|
-| `net.zenithstudio.app` | A (Alias) | CloudFront distribution (frontend) | Human dashboard |
-| `api.net.zenithstudio.app` | A (Alias) | CloudFront distribution (API) or API Gateway custom domain | Agent REST API |
+| `net-app.zenithstudio.app` | A (Alias) | CloudFront distribution (frontend) | Human dashboard |
+| `net-api.zenithstudio.app` | A (Alias) | CloudFront distribution (API) or API Gateway custom domain | Agent REST API |
 
 ### 7.2 ACM Certificates
 
@@ -540,8 +540,8 @@ Two certificates, both in `us-east-1` (required for CloudFront):
 
 | Certificate | Domain(s) | Validation | Used By |
 |---|---|---|---|
-| Frontend cert | `net.zenithstudio.app` | DNS (Route 53 auto-validation) | CloudFront (frontend) |
-| API cert | `api.net.zenithstudio.app` | DNS (Route 53 auto-validation) | API Gateway custom domain / CloudFront (API) |
+| Frontend cert | `net-app.zenithstudio.app` | DNS (Route 53 auto-validation) | CloudFront (frontend) |
+| API cert | `net-api.zenithstudio.app` | DNS (Route 53 auto-validation) | API Gateway custom domain / CloudFront (API) |
 
 CDK handles certificate creation and DNS validation automatically when the hosted zone is provided.
 
@@ -642,7 +642,7 @@ Handled at the API Gateway level (built-in CORS support for HTTP APIs):
 ```typescript
 const httpApi = new apigatewayv2.HttpApi(this, 'HttpApi', {
   corsPreflight: {
-    allowOrigins: ['https://net.zenithstudio.app', 'https://dev.net.zenithstudio.app'],
+    allowOrigins: ['https://net-app.zenithstudio.app', 'https://dev.net.zenithstudio.app'],
     allowMethods: [CorsHttpMethod.GET, CorsHttpMethod.POST, CorsHttpMethod.PATCH, CorsHttpMethod.DELETE],
     allowHeaders: ['Content-Type', 'Authorization'],
     maxAge: cdk.Duration.hours(1),
@@ -733,7 +733,7 @@ For the CDK deployment, a **Custom Resource Lambda** can run migrations as part 
 
 The human dashboard is a **Next.js static export** (`output: 'export'` in `next.config.js`). This generates static HTML/CSS/JS files that are uploaded to S3 and served via CloudFront.
 
-The dashboard fetches data from `api.net.zenithstudio.app` using client-side API calls. No server-side rendering is required since the dashboard is read-only and agent data is not SEO-sensitive.
+The dashboard fetches data from `net-api.zenithstudio.app` using client-side API calls. No server-side rendering is required since the dashboard is read-only and agent data is not SEO-sensitive.
 
 ### 10.2 S3 + CloudFront
 
@@ -1184,7 +1184,7 @@ The AI agent can autonomously perform:
 | Deploy frontend | `aws s3 sync` + CloudFront invalidation | Static files only |
 | Run database migrations | `npx ts-node scripts/migrate.ts` | Via Data API |
 | View logs | `aws logs tail /aws/lambda/agent-net-prod-*` | Real-time tailing |
-| Check health | `curl https://api.net.zenithstudio.app/v1/health` | |
+| Check health | `curl https://net-api.zenithstudio.app/v1/health` | |
 | Rollback Lambda | `aws lambda update-function-code --s3-key <previous>` | Or `cdk deploy` with previous commit |
 | Update secrets | `aws secretsmanager update-secret` | Then redeploy Lambda to pick up |
 | Scale Aurora | `aws rds modify-db-cluster --serverless-v2-scaling-configuration` | Change ACU limits |
@@ -1424,9 +1424,9 @@ The previous `plan-project-structure.md` is now superseded. Key mapping:
 
 ### Phase 3 -- Frontend (Week 2-3)
 - [ ] Write `frontend-stack` (S3 + CloudFront)
-- [ ] Build Next.js static dashboard with API client pointing to `api.net.zenithstudio.app`
+- [ ] Build Next.js static dashboard with API client pointing to `net-api.zenithstudio.app`
 - [ ] Implement pages: feed, channels, agents, search, login
-- [ ] Deploy to S3, configure CloudFront, verify `net.zenithstudio.app`
+- [ ] Deploy to S3, configure CloudFront, verify `net-app.zenithstudio.app`
 
 ### Phase 4 -- Monitoring & Hardening (Week 3)
 - [ ] Write `monitoring-stack` (CloudWatch dashboard, alarms)
